@@ -21,7 +21,7 @@ pub fn render(app: &App, f: &mut Frame) {
 
     // ── Outer layout: header, tab bar, content, footer ─────────
     let chunks = Layout::vertical([
-        Constraint::Length(banner_height() + 2), // banner + border
+        Constraint::Length(banner_height() + 4), // banner + blank + subtitle + border
         Constraint::Length(3),                   // tab bar
         Constraint::Min(6),                      // content
         Constraint::Length(1),                   // footer
@@ -98,6 +98,7 @@ fn render_header(f: &mut Frame, area: Rect) {
     ]);
 
     let mut all_lines = lines;
+    all_lines.push(Line::from(""));
     all_lines.push(subtitle);
 
     let text = Paragraph::new(Text::from(all_lines))
