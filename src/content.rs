@@ -226,7 +226,7 @@ pub struct SkillGroup {
 pub const SKILLS: &[SkillGroup] = &[
     SkillGroup {
         name: "Languages",
-        items: &["Rust", "TypeScript", "JavaScript", "Python", "Lua", "CSS"],
+        items: &["Rust", "TypeScript", "JavaScript", "Lua", "CSS"],
     },
     SkillGroup {
         name: "Mobile",
@@ -234,7 +234,7 @@ pub const SKILLS: &[SkillGroup] = &[
     },
     SkillGroup {
         name: "Web",
-        items: &["Next.js", "Astro", "Svelte", "React"],
+        items: &["Next.js", "Astro", "React"],
     },
     SkillGroup {
         name: "Terminal / TUI",
@@ -242,7 +242,7 @@ pub const SKILLS: &[SkillGroup] = &[
     },
     SkillGroup {
         name: "Infrastructure",
-        items: &["Docker", "Fly.io", "Vercel", "GitHub Actions"],
+        items: &["Docker", "Vercel", "GitHub Actions", "Linux", "Arch"],
     },
     SkillGroup {
         name: "Other",
