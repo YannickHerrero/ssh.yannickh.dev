@@ -175,16 +175,16 @@ fn render_content(app: &App, f: &mut Frame, area: Rect) {
     f.render_widget(block, area);
 
     match app.tab {
-        Tab::About => render_about(f, inner),
+        Tab::About => render_about(app, f, inner),
         Tab::Projects => render_projects(app, f, inner),
-        Tab::Skills => render_skills(f, inner),
-        Tab::Contact => render_contact(f, inner),
+        Tab::Skills => render_skills(app, f, inner),
+        Tab::Contact => render_contact(app, f, inner),
     }
 }
 
 // ── About tab ──────────────────────────────────────────────────
 
-fn render_about(f: &mut Frame, area: Rect) {
+fn render_about(app: &App, f: &mut Frame, area: Rect) {
     let mut lines: Vec<Line> = Vec::new();
 
     for (i, &line_str) in content::ABOUT_LINES.iter().enumerate() {
@@ -198,8 +198,17 @@ fn render_about(f: &mut Frame, area: Rect) {
         }
     }
 
-    let text = Paragraph::new(Text::from(lines)).wrap(Wrap { trim: false });
+    let total_lines = lines.len();
+    let viewport_h = area.height as usize;
+
+    let text = Paragraph::new(Text::from(lines))
+        .scroll((app.scroll_offset as u16, 0))
+        .wrap(Wrap { trim: false });
     f.render_widget(text, area);
+
+    if total_lines > viewport_h {
+        render_scroll_indicator(f, area, app.scroll_offset, total_lines, viewport_h);
+    }
 }
 
 // ── Projects tab (scrollable) ──────────────────────────────────
@@ -252,7 +261,7 @@ fn render_projects(app: &App, f: &mut Frame, area: Rect) {
 
 // ── Skills tab ─────────────────────────────────────────────────
 
-fn render_skills(f: &mut Frame, area: Rect) {
+fn render_skills(app: &App, f: &mut Frame, area: Rect) {
     let mut lines: Vec<Line> = Vec::new();
 
     for (i, group) in content::SKILLS.iter().enumerate() {
@@ -266,13 +275,22 @@ fn render_skills(f: &mut Frame, area: Rect) {
         lines.push(Line::from(Span::styled(items_str, theme::SKILL_ITEM)));
     }
 
-    let text = Paragraph::new(Text::from(lines)).wrap(Wrap { trim: false });
+    let total_lines = lines.len();
+    let viewport_h = area.height as usize;
+
+    let text = Paragraph::new(Text::from(lines))
+        .scroll((app.scroll_offset as u16, 0))
+        .wrap(Wrap { trim: false });
     f.render_widget(text, area);
+
+    if total_lines > viewport_h {
+        render_scroll_indicator(f, area, app.scroll_offset, total_lines, viewport_h);
+    }
 }
 
 // ── Contact tab ────────────────────────────────────────────────
 
-fn render_contact(f: &mut Frame, area: Rect) {
+fn render_contact(app: &App, f: &mut Frame, area: Rect) {
     let mut lines: Vec<Line> = Vec::new();
 
     lines.push(Line::from(Span::styled(
@@ -294,29 +312,32 @@ fn render_contact(f: &mut Frame, area: Rect) {
         theme::TEXT_DIM,
     )));
 
-    let text = Paragraph::new(Text::from(lines)).wrap(Wrap { trim: false });
+    let total_lines = lines.len();
+    let viewport_h = area.height as usize;
+
+    let text = Paragraph::new(Text::from(lines))
+        .scroll((app.scroll_offset as u16, 0))
+        .wrap(Wrap { trim: false });
     f.render_widget(text, area);
+
+    if total_lines > viewport_h {
+        render_scroll_indicator(f, area, app.scroll_offset, total_lines, viewport_h);
+    }
 }
 
 // ── Footer ─────────────────────────────────────────────────────
 
-fn render_footer(app: &App, f: &mut Frame, area: Rect) {
-    let scrollable = matches!(app.tab, Tab::Projects);
-
-    let mut spans = vec![
+fn render_footer(_app: &App, f: &mut Frame, area: Rect) {
+    let spans = vec![
         Span::styled(" h/l ", theme::KEY_HINT),
         Span::styled("navigate", theme::KEY_ACTION),
+        Span::styled("  j/k ", theme::KEY_HINT),
+        Span::styled("scroll", theme::KEY_ACTION),
+        Span::styled("  tab ", theme::KEY_HINT),
+        Span::styled("next", theme::KEY_ACTION),
+        Span::styled("  q ", theme::KEY_HINT),
+        Span::styled("quit", theme::KEY_ACTION),
     ];
-
-    if scrollable {
-        spans.push(Span::styled("  j/k ", theme::KEY_HINT));
-        spans.push(Span::styled("scroll", theme::KEY_ACTION));
-    }
-
-    spans.push(Span::styled("  tab ", theme::KEY_HINT));
-    spans.push(Span::styled("next", theme::KEY_ACTION));
-    spans.push(Span::styled("  q ", theme::KEY_HINT));
-    spans.push(Span::styled("quit", theme::KEY_ACTION));
 
     let help = Paragraph::new(Line::from(spans)).alignment(Alignment::Center);
     f.render_widget(help, area);
