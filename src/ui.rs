@@ -1,4 +1,4 @@
-use ratatui::layout::{Alignment, Constraint, Layout, Rect};
+use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{Block, Borders, Clear, Padding, Paragraph, Wrap};
 use ratatui::Frame;
@@ -211,52 +211,154 @@ fn render_about(app: &App, f: &mut Frame, area: Rect) {
     }
 }
 
-// ── Projects tab (scrollable) ──────────────────────────────────
+// ── Projects tab (telescope-style split pane) ──────────────────
 
 fn render_projects(app: &App, f: &mut Frame, area: Rect) {
+    // Split into left (40%) and right (60%) panes
+    let panes = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
+        .split(area);
+
+    render_project_list(app, f, panes[0]);
+    render_project_detail(app, f, panes[1]);
+}
+
+/// Render the left pane: project list grouped by category.
+fn render_project_list(app: &App, f: &mut Frame, area: Rect) {
+    let block = Block::default()
+        .borders(Borders::RIGHT)
+        .border_style(theme::BORDER)
+        .padding(Padding::new(1, 1, 0, 0));
+
+    let inner = block.inner(area);
+    f.render_widget(block, area);
+
     let mut lines: Vec<Line> = Vec::new();
+    let mut flat_idx: usize = 0;
 
     for (cat_idx, cat) in content::PROJECT_CATEGORIES.iter().enumerate() {
         if cat_idx > 0 {
             lines.push(Line::from(""));
         }
 
-        // Category header
-        lines.push(Line::from(vec![
-            Span::styled("\u{2500}\u{2500} ", theme::BORDER),
-            Span::styled(cat.name, theme::CATEGORY_HEADER),
-            Span::styled(" \u{2500}\u{2500}", theme::BORDER),
-        ]));
-        lines.push(Line::from(""));
+        // Category header (non-selectable)
+        lines.push(Line::from(Span::styled(cat.name, theme::CATEGORY_HEADER)));
 
-        for (proj_idx, project) in cat.projects.iter().enumerate() {
-            if proj_idx > 0 {
-                lines.push(Line::from(""));
-            }
+        for project in cat.projects.iter() {
+            let is_selected = flat_idx == app.selected_project;
 
-            lines.push(Line::from(Span::styled(project.name, theme::PROJECT_NAME)));
-            lines.push(Line::from(Span::styled(
-                project.description,
-                theme::PROJECT_DESC,
-            )));
-            lines.push(Line::from(Span::styled(project.tech, theme::PROJECT_TECH)));
-            lines.push(Line::from(Span::styled(project.url, theme::LINK)));
+            let line = if is_selected {
+                Line::from(vec![
+                    Span::styled(" \u{25b8} ", theme::PROJECT_ARROW),
+                    Span::styled(project.name, theme::PROJECT_SELECTED),
+                ])
+            } else {
+                Line::from(vec![
+                    Span::raw("   "),
+                    Span::styled(project.name, theme::PROJECT_LIST_ITEM),
+                ])
+            };
+
+            lines.push(line);
+            flat_idx += 1;
         }
     }
 
     let total_lines = lines.len();
-    let viewport_h = area.height as usize;
+    let viewport_h = inner.height as usize;
 
-    // Apply scroll offset
-    let text = Paragraph::new(Text::from(lines))
-        .scroll((app.scroll_offset as u16, 0))
-        .wrap(Wrap { trim: false });
-    f.render_widget(text, area);
+    // Auto-scroll to keep the selected project visible.
+    // Find which line the selected project is on.
+    let selected_line = find_selected_line_in_list(app.selected_project);
+    let scroll_offset = compute_auto_scroll(selected_line, viewport_h, total_lines);
 
-    // Scroll indicator
-    if total_lines > viewport_h {
-        render_scroll_indicator(f, area, app.scroll_offset, total_lines, viewport_h);
+    let text = Paragraph::new(Text::from(lines)).scroll((scroll_offset as u16, 0));
+    f.render_widget(text, inner);
+}
+
+/// Given a flat project index, compute which line it falls on in the list pane.
+fn find_selected_line_in_list(selected: usize) -> usize {
+    let mut line: usize = 0;
+    let mut flat_idx: usize = 0;
+
+    for (cat_idx, cat) in content::PROJECT_CATEGORIES.iter().enumerate() {
+        if cat_idx > 0 {
+            line += 1; // blank separator
+        }
+        line += 1; // category header
+
+        for _ in cat.projects.iter() {
+            if flat_idx == selected {
+                return line;
+            }
+            line += 1;
+            flat_idx += 1;
+        }
     }
+    line
+}
+
+/// Compute a scroll offset that keeps `target_line` visible within the viewport,
+/// trying to center it when possible.
+fn compute_auto_scroll(target_line: usize, viewport_h: usize, total_lines: usize) -> usize {
+    if total_lines <= viewport_h {
+        return 0;
+    }
+    let max_scroll = total_lines.saturating_sub(viewport_h);
+    // Try to center the target line
+    let ideal = target_line.saturating_sub(viewport_h / 2);
+    ideal.min(max_scroll)
+}
+
+/// Render the right pane: detail view for the selected project.
+fn render_project_detail(app: &App, f: &mut Frame, area: Rect) {
+    let block = Block::default().padding(Padding::new(2, 1, 1, 0));
+
+    let inner = block.inner(area);
+    f.render_widget(block, area);
+
+    let Some((category, project)) = content::get_project_by_flat_index(app.selected_project) else {
+        return;
+    };
+
+    let mut lines: Vec<Line> = Vec::new();
+
+    // Project name
+    lines.push(Line::from(Span::styled(
+        project.name,
+        theme::PROJECT_DETAIL_NAME,
+    )));
+
+    // Category
+    lines.push(Line::from(Span::styled(
+        category.name,
+        theme::PROJECT_DETAIL_CATEGORY,
+    )));
+
+    lines.push(Line::from(""));
+
+    // Description
+    lines.push(Line::from(Span::styled(project.description, theme::TEXT)));
+
+    lines.push(Line::from(""));
+
+    // Tech stack
+    lines.push(Line::from(vec![
+        Span::styled("Tech  ", theme::PROJECT_DETAIL_LABEL),
+        Span::styled(project.tech, theme::TEXT_DIM),
+    ]));
+
+    lines.push(Line::from(""));
+
+    // URL
+    lines.push(Line::from(vec![
+        Span::styled("URL   ", theme::PROJECT_DETAIL_LABEL),
+        Span::styled(project.url, theme::LINK),
+    ]));
+
+    let text = Paragraph::new(Text::from(lines)).wrap(Wrap { trim: false });
+    f.render_widget(text, inner);
 }
 
 // ── Skills tab ─────────────────────────────────────────────────
@@ -327,12 +429,18 @@ fn render_contact(app: &App, f: &mut Frame, area: Rect) {
 
 // ── Footer ─────────────────────────────────────────────────────
 
-fn render_footer(_app: &App, f: &mut Frame, area: Rect) {
+fn render_footer(app: &App, f: &mut Frame, area: Rect) {
+    let jk_action = if app.tab == Tab::Projects {
+        "select"
+    } else {
+        "scroll"
+    };
+
     let spans = vec![
         Span::styled(" h/l ", theme::KEY_HINT),
         Span::styled("navigate", theme::KEY_ACTION),
         Span::styled("  j/k ", theme::KEY_HINT),
-        Span::styled("scroll", theme::KEY_ACTION),
+        Span::styled(jk_action, theme::KEY_ACTION),
         Span::styled("  tab ", theme::KEY_HINT),
         Span::styled("next", theme::KEY_ACTION),
         Span::styled("  q ", theme::KEY_HINT),

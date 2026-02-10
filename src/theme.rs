@@ -25,11 +25,21 @@ pub const LINK: Style = Style::new()
     .add_modifier(Modifier::UNDERLINED);
 
 // ── Projects ───────────────────────────────────────────────────
-pub const PROJECT_NAME: Style = Style::new().fg(Color::White).add_modifier(Modifier::BOLD);
-pub const PROJECT_DESC: Style = Style::new().fg(Color::Gray);
-pub const PROJECT_TECH: Style = Style::new().fg(Color::DarkGray);
-
 pub const CATEGORY_HEADER: Style = Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD);
+/// Style for the selected project name in the left pane list.
+pub const PROJECT_SELECTED: Style = Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD);
+/// Style for unselected project names in the left pane list.
+pub const PROJECT_LIST_ITEM: Style = Style::new().fg(Color::White);
+/// Style for the selection indicator arrow.
+pub const PROJECT_ARROW: Style = Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD);
+/// Style for the project name in the detail pane.
+pub const PROJECT_DETAIL_NAME: Style = Style::new().fg(Color::White).add_modifier(Modifier::BOLD);
+/// Style for labels in the detail pane (e.g. "Tech:", "URL:").
+pub const PROJECT_DETAIL_LABEL: Style = Style::new()
+    .fg(Color::DarkGray)
+    .add_modifier(Modifier::BOLD);
+/// Style for the category name shown in the detail pane.
+pub const PROJECT_DETAIL_CATEGORY: Style = Style::new().fg(Color::Cyan);
 
 // ── Skills ─────────────────────────────────────────────────────
 pub const SKILL_GROUP: Style = Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD);

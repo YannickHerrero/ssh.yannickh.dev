@@ -230,6 +230,8 @@ impl Handler for AppServer {
                     // Estimate content area height (total - header - tabs - footer - borders/padding)
                     let content_h = viewport_h.saturating_sub(14) as usize;
 
+                    let on_projects_tab = app.tab == crate::app::Tab::Projects;
+
                     match data {
                         // 'q' or Ctrl-C — quit
                         b"q" | b"Q" | b"\x03" => {
@@ -246,27 +248,43 @@ impl Handler for AppServer {
                             app.prev_tab();
                             needs_render = true;
                         }
-                        // Up arrow or vim 'k' — scroll up
+                        // Up arrow or vim 'k' — scroll up / select previous project
                         b"\x1b[A" | b"k" => {
-                            app.scroll_up();
+                            if on_projects_tab {
+                                app.select_prev_project();
+                            } else {
+                                app.scroll_up();
+                            }
                             needs_render = true;
                         }
-                        // Down arrow or vim 'j' — scroll down
+                        // Down arrow or vim 'j' — scroll down / select next project
                         b"\x1b[B" | b"j" => {
-                            let total = app.content_line_count();
-                            app.scroll_down(total, content_h);
+                            if on_projects_tab {
+                                app.select_next_project();
+                            } else {
+                                let total = app.content_line_count();
+                                app.scroll_down(total, content_h);
+                            }
                             needs_render = true;
                         }
-                        // vim 'g' — scroll to top
+                        // vim 'g' — scroll to top / select first project
                         b"g" => {
-                            app.scroll_offset = 0;
+                            if on_projects_tab {
+                                app.select_first_project();
+                            } else {
+                                app.scroll_offset = 0;
+                            }
                             needs_render = true;
                         }
-                        // vim 'G' — scroll to bottom
+                        // vim 'G' — scroll to bottom / select last project
                         b"G" => {
-                            let total = app.content_line_count();
-                            if total > content_h {
-                                app.scroll_offset = total - content_h;
+                            if on_projects_tab {
+                                app.select_last_project();
+                            } else {
+                                let total = app.content_line_count();
+                                if total > content_h {
+                                    app.scroll_offset = total - content_h;
+                                }
                             }
                             needs_render = true;
                         }

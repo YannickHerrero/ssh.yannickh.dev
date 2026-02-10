@@ -52,6 +52,8 @@ pub struct App {
     pub should_quit: bool,
     pub scroll_offset: usize,
     pub intro: IntroPhase,
+    /// Index of the currently selected project in the flat project list (Projects tab).
+    pub selected_project: usize,
 }
 
 impl App {
@@ -61,6 +63,7 @@ impl App {
             should_quit: false,
             scroll_offset: 0,
             intro: IntroPhase::Typing { chars_shown: 0 },
+            selected_project: 0,
         }
     }
 
@@ -91,6 +94,32 @@ impl App {
 
     pub fn quit(&mut self) {
         self.should_quit = true;
+    }
+
+    // ── Project selection (Projects tab) ──────────────────────
+
+    pub fn select_next_project(&mut self) {
+        let total = content::total_project_count();
+        if total > 0 && self.selected_project < total - 1 {
+            self.selected_project += 1;
+        }
+    }
+
+    pub fn select_prev_project(&mut self) {
+        if self.selected_project > 0 {
+            self.selected_project -= 1;
+        }
+    }
+
+    pub fn select_first_project(&mut self) {
+        self.selected_project = 0;
+    }
+
+    pub fn select_last_project(&mut self) {
+        let total = content::total_project_count();
+        if total > 0 {
+            self.selected_project = total - 1;
+        }
     }
 
     // ── Scrolling ──────────────────────────────────────────────

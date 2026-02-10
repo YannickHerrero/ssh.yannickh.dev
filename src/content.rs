@@ -192,6 +192,29 @@ pub fn total_project_lines() -> usize {
     lines
 }
 
+/// Total number of projects across all categories.
+pub fn total_project_count() -> usize {
+    PROJECT_CATEGORIES
+        .iter()
+        .map(|cat| cat.projects.len())
+        .sum()
+}
+
+/// Map a flat project index (0-based) to the corresponding category and project.
+/// Returns `None` if the index is out of range.
+pub fn get_project_by_flat_index(
+    idx: usize,
+) -> Option<(&'static ProjectCategory, &'static Project)> {
+    let mut remaining = idx;
+    for cat in PROJECT_CATEGORIES {
+        if remaining < cat.projects.len() {
+            return Some((cat, &cat.projects[remaining]));
+        }
+        remaining -= cat.projects.len();
+    }
+    None
+}
+
 // ── Skills ─────────────────────────────────────────────────────
 
 pub struct SkillGroup {
