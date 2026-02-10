@@ -20,12 +20,15 @@ async fn main() -> anyhow::Result<()> {
         .and_then(|p| p.parse().ok())
         .unwrap_or(2222);
 
-    log::info!("Generating SSH host key...");
-    let key = russh::keys::PrivateKey::random(
-        &mut OsRng,
-        russh::keys::Algorithm::Ed25519,
-    )
-    .expect("Failed to generate host key");
+    let key = if let Ok(key_pem) = std::env::var("SSH_HOST_KEY") {
+        log::info!("Loading SSH host key from SSH_HOST_KEY env var...");
+        russh::keys::decode_secret_key(&key_pem, None)
+            .expect("Failed to decode SSH_HOST_KEY")
+    } else {
+        log::info!("No SSH_HOST_KEY set, generating ephemeral host key...");
+        russh::keys::PrivateKey::random(&mut OsRng, russh::keys::Algorithm::Ed25519)
+            .expect("Failed to generate host key")
+    };
 
     let config = russh::server::Config {
         inactivity_timeout: Some(std::time::Duration::from_secs(300)),
