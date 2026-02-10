@@ -304,12 +304,12 @@ fn render_footer(app: &App, f: &mut Frame, area: Rect) {
     let scrollable = matches!(app.tab, Tab::Projects);
 
     let mut spans = vec![
-        Span::styled(" \u{2190}/\u{2192} ", theme::KEY_HINT),
+        Span::styled(" h/l ", theme::KEY_HINT),
         Span::styled("navigate", theme::KEY_ACTION),
     ];
 
     if scrollable {
-        spans.push(Span::styled("  \u{2191}/\u{2193} ", theme::KEY_HINT));
+        spans.push(Span::styled("  j/k ", theme::KEY_HINT));
         spans.push(Span::styled("scroll", theme::KEY_ACTION));
     }
 

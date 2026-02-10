@@ -236,25 +236,38 @@ impl Handler for AppServer {
                             app.quit();
                             should_quit = true;
                         }
-                        // Right arrow (\x1b[C) or Tab (\t)
-                        b"\x1b[C" | b"\t" => {
+                        // Right arrow, Tab, or vim 'l' — next tab
+                        b"\x1b[C" | b"\t" | b"l" => {
                             app.next_tab();
                             needs_render = true;
                         }
-                        // Left arrow (\x1b[D) or Shift-Tab (\x1b[Z)
-                        b"\x1b[D" | b"\x1b[Z" => {
+                        // Left arrow, Shift-Tab, or vim 'h' — prev tab
+                        b"\x1b[D" | b"\x1b[Z" | b"h" => {
                             app.prev_tab();
                             needs_render = true;
                         }
-                        // Up arrow (\x1b[A)
-                        b"\x1b[A" => {
+                        // Up arrow or vim 'k' — scroll up
+                        b"\x1b[A" | b"k" => {
                             app.scroll_up();
                             needs_render = true;
                         }
-                        // Down arrow (\x1b[B)
-                        b"\x1b[B" => {
+                        // Down arrow or vim 'j' — scroll down
+                        b"\x1b[B" | b"j" => {
                             let total = app.content_line_count();
                             app.scroll_down(total, content_h);
+                            needs_render = true;
+                        }
+                        // vim 'g' — scroll to top
+                        b"g" => {
+                            app.scroll_offset = 0;
+                            needs_render = true;
+                        }
+                        // vim 'G' — scroll to bottom
+                        b"G" => {
+                            let total = app.content_line_count();
+                            if total > content_h {
+                                app.scroll_offset = total - content_h;
+                            }
                             needs_render = true;
                         }
                         // '1' .. '4' — jump to tab directly
