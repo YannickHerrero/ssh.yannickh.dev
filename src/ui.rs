@@ -42,7 +42,10 @@ fn render_intro(app: &App, f: &mut Frame, area: Rect) {
         IntroPhase::Pause { .. } | IntroPhase::Done => content::banner_char_count(),
     };
 
-    // Build the revealed portion of the banner
+    let max_w = banner_width();
+
+    // Build the revealed portion of the banner.
+    // Pad each line to the same width so centering keeps alignment.
     let mut lines: Vec<Line> = Vec::new();
     let mut remaining = chars_shown;
 
@@ -51,7 +54,11 @@ fn render_intro(app: &App, f: &mut Frame, area: Rect) {
             break;
         }
         let show = remaining.min(banner_line.len());
-        let mut spans = vec![Span::styled(&banner_line[..show], theme::HEADER)];
+        let revealed = &banner_line[..show];
+
+        // Pad the revealed portion to max banner width
+        let padded = format!("{:<width$}", revealed, width = max_w);
+        let mut spans = vec![Span::styled(padded, theme::HEADER)];
 
         // Show a blinking cursor at the end of the current typing line
         if show < banner_line.len() {
@@ -85,20 +92,40 @@ fn banner_height() -> u16 {
     content::BANNER.len() as u16
 }
 
+fn banner_width() -> usize {
+    content::BANNER.iter().map(|l| l.len()).max().unwrap_or(0)
+}
+
 fn render_header(f: &mut Frame, area: Rect) {
+    let max_w = banner_width();
+
+    // Pad each banner line to the same width so Alignment::Center
+    // shifts them as a uniform block instead of centering each
+    // line independently (which breaks the ASCII art).
     let lines: Vec<Line> = content::BANNER
         .iter()
-        .map(|&l| Line::from(Span::styled(l, theme::HEADER)))
+        .map(|&l| {
+            let padded = format!("{:<width$}", l, width = max_w);
+            Line::from(Span::styled(padded, theme::HEADER))
+        })
         .collect();
 
+    // Pad subtitle to the same width for consistent centering
+    let subtitle_raw = "software engineer  \u{00b7}  France";
+    let sub_pad_total = max_w.saturating_sub(subtitle_raw.chars().count());
+    let sub_pad_left = sub_pad_total / 2;
+    let sub_pad_right = sub_pad_total - sub_pad_left;
+
     let subtitle = Line::from(vec![
+        Span::raw(" ".repeat(sub_pad_left)),
         Span::styled("software engineer", theme::TEXT_DIM),
         Span::styled("  \u{00b7}  ", theme::TEXT_MUTED),
         Span::styled("France", theme::TEXT_DIM),
+        Span::raw(" ".repeat(sub_pad_right)),
     ]);
 
     let mut all_lines = lines;
-    all_lines.push(Line::from(""));
+    all_lines.push(Line::from(format!("{:<width$}", "", width = max_w)));
     all_lines.push(subtitle);
 
     let text = Paragraph::new(Text::from(all_lines))
