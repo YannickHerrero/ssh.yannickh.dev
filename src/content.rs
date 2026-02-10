@@ -20,25 +20,26 @@ pub fn banner_char_count() -> usize {
 // ── About ──────────────────────────────────────────────────────
 
 pub const ABOUT_LINES: &[&str] = &[
-    "Hey, I'm Yannick.",
+    "Hi there \u{1F44B}, I'm Yannick!",
     "",
-    "Solo dev based in France, obsessed with building",
-    "things and learning new stuff.",
+    "I'm a freelance dev based in France, obsessed with",
+    "building things and learning new stuff.",
     "",
     "If an idea gets stuck in my head, I'll probably end",
     "up building it.",
     "",
     "My go-to stack is React Native, Expo, TypeScript,",
-    "and Next.js — but I spend a lot of time in Rust too.",
+    "and Next.js. I spend most of my time in mobile and",
+    "web development but I'm always curious about new",
+    "tools and technologies.",
     "",
-    "Currently shipping Doku, a French learning app with",
-    "graded stories and a cute cat mascot.",
+    "Currently shipping Doku \u{2013} a French learning app",
+    "with graded stories and a cute cat mascot \u{1F431}",
     "",
-    "I care about clean code, good developer experience,",
-    "and shipping software that actually works.",
+    "I believe in learning by doing, always building",
+    "something, and improving along the way.",
     "",
-    "This SSH portfolio was built with Rust, using russh",
-    "and ratatui. Feel free to look around.",
+    "Open to freelance opportunities \u{2013} hello@yannickh.dev",
 ];
 
 // ── Projects ───────────────────────────────────────────────────
