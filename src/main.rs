@@ -1,6 +1,8 @@
 mod app;
+mod content;
 mod handler;
 mod terminal;
+mod theme;
 mod ui;
 
 use std::sync::Arc;
