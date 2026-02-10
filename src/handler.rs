@@ -52,6 +52,38 @@ impl AppServer {
             });
         }
     }
+
+    /// Spawn the intro animation ticker for a client.
+    fn spawn_intro_animation(&self, id: usize) {
+        let clients = self.clients.clone();
+        tokio::spawn(async move {
+            // Characters to reveal per tick — controls typing speed
+            let chars_per_tick: usize = 4;
+            let tick_ms: u64 = 30;
+
+            loop {
+                tokio::time::sleep(std::time::Duration::from_millis(tick_ms)).await;
+
+                let mut guard = clients.lock().await;
+                let should_stop = if let Some((terminal, app)) = guard.get_mut(&id) {
+                    let changed = app.advance_intro(chars_per_tick);
+                    if changed {
+                        let _ = terminal.draw(|f| {
+                            ui::render(app, f);
+                        });
+                    }
+                    app.intro_done()
+                } else {
+                    // Client disconnected
+                    true
+                };
+
+                if should_stop {
+                    break;
+                }
+            }
+        });
+    }
 }
 
 impl Server for AppServer {
@@ -107,8 +139,8 @@ impl Handler for AppServer {
         Ok(true)
     }
 
-    /// Client requests a PTY — capture the terminal dimensions and do the
-    /// initial render.
+    /// Client requests a PTY — capture the terminal dimensions, do the
+    /// initial render, and start the intro animation.
     async fn pty_request(
         &mut self,
         channel: ChannelId,
@@ -134,8 +166,11 @@ impl Handler for AppServer {
             }
         }
 
-        // Initial render
+        // Initial render (will show the intro animation first frame)
         self.render_client(self.id).await;
+
+        // Start the intro animation ticker
+        self.spawn_intro_animation(self.id);
 
         session.channel_success(channel)?;
         Ok(())
@@ -181,38 +216,67 @@ impl Handler for AppServer {
 
         {
             let mut clients = self.clients.lock().await;
-            if let Some((_, app)) = clients.get_mut(&self.id) {
-                match data {
-                    // 'q' or Ctrl-C — quit
-                    b"q" | b"Q" | b"\x03" => {
-                        app.quit();
-                        should_quit = true;
-                    }
-                    // Right arrow (\x1b[C) or Tab (\t)
-                    b"\x1b[C" | b"\t" => {
-                        app.next_tab();
-                        needs_render = true;
-                    }
-                    // Left arrow (\x1b[D) or Shift-Tab (\x1b[Z)
-                    b"\x1b[D" | b"\x1b[Z" => {
-                        app.prev_tab();
-                        needs_render = true;
-                    }
-                    // '1', '2', '3' — jump to tab directly
-                    b"1" => {
-                        app.tab = crate::app::Tab::About;
-                        needs_render = true;
-                    }
-                    b"2" => {
-                        app.tab = crate::app::Tab::Projects;
-                        needs_render = true;
-                    }
-                    b"3" => {
-                        app.tab = crate::app::Tab::Contact;
-                        needs_render = true;
-                    }
-                    _ => {
-                        // Ignore unknown input
+            if let Some((terminal, app)) = clients.get_mut(&self.id) {
+                // If intro is still playing, any keypress skips it
+                if !app.intro_done() {
+                    app.skip_intro();
+                    let _ = terminal.draw(|f| {
+                        ui::render(app, f);
+                    });
+                    // Don't process the keypress further
+                } else {
+                    // Get viewport height for scroll calculations
+                    let viewport_h = terminal.size().map(|s| s.height).unwrap_or(24);
+                    // Estimate content area height (total - header - tabs - footer - borders/padding)
+                    let content_h = viewport_h.saturating_sub(14) as usize;
+
+                    match data {
+                        // 'q' or Ctrl-C — quit
+                        b"q" | b"Q" | b"\x03" => {
+                            app.quit();
+                            should_quit = true;
+                        }
+                        // Right arrow (\x1b[C) or Tab (\t)
+                        b"\x1b[C" | b"\t" => {
+                            app.next_tab();
+                            needs_render = true;
+                        }
+                        // Left arrow (\x1b[D) or Shift-Tab (\x1b[Z)
+                        b"\x1b[D" | b"\x1b[Z" => {
+                            app.prev_tab();
+                            needs_render = true;
+                        }
+                        // Up arrow (\x1b[A)
+                        b"\x1b[A" => {
+                            app.scroll_up();
+                            needs_render = true;
+                        }
+                        // Down arrow (\x1b[B)
+                        b"\x1b[B" => {
+                            let total = app.content_line_count();
+                            app.scroll_down(total, content_h);
+                            needs_render = true;
+                        }
+                        // '1' .. '4' — jump to tab directly
+                        b"1" => {
+                            app.go_to_tab(0);
+                            needs_render = true;
+                        }
+                        b"2" => {
+                            app.go_to_tab(1);
+                            needs_render = true;
+                        }
+                        b"3" => {
+                            app.go_to_tab(2);
+                            needs_render = true;
+                        }
+                        b"4" => {
+                            app.go_to_tab(3);
+                            needs_render = true;
+                        }
+                        _ => {
+                            // Ignore unknown input
+                        }
                     }
                 }
             }
