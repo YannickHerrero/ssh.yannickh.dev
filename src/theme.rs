@@ -2,8 +2,6 @@ use ratatui::style::{Color, Modifier, Style};
 
 // ── Header ─────────────────────────────────────────────────────
 pub const HEADER: Style = Style::new().fg(Color::White).add_modifier(Modifier::BOLD);
-pub const HEADER_DIM: Style = Style::new().fg(Color::DarkGray);
-
 // ── Tabs ───────────────────────────────────────────────────────
 pub const TAB_ACTIVE: Style = Style::new()
     .fg(Color::White)
@@ -41,8 +39,6 @@ pub const SKILL_ITEM: Style = Style::new().fg(Color::White);
 pub const CONTACT_LABEL: Style = Style::new()
     .fg(Color::DarkGray)
     .add_modifier(Modifier::BOLD);
-pub const CONTACT_VALUE: Style = Style::new().fg(Color::White);
-
 // ── Footer ─────────────────────────────────────────────────────
 pub const KEY_HINT: Style = Style::new().fg(Color::White).add_modifier(Modifier::BOLD);
 pub const KEY_ACTION: Style = Style::new().fg(Color::DarkGray);

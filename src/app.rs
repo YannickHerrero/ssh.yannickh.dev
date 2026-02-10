@@ -115,7 +115,7 @@ impl App {
             Tab::Projects => content::total_project_lines(),
             Tab::Skills => {
                 let mut lines = 0;
-                for (i, group) in content::SKILLS.iter().enumerate() {
+                for (i, _group) in content::SKILLS.iter().enumerate() {
                     if i > 0 {
                         lines += 1; // blank separator
                     }
